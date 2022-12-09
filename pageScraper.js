@@ -1,9 +1,12 @@
 const { Page } = require('puppeteer');
+let contPag = 84
 
 const scraperObject = {
-	url: 'https://www.drogaraia.com.br/medicamentos.html?page=7',
+	url: 'https://www.drogaraia.com.br/medicamentos.html?page=' + contPag,
 	async scraper(browser){
 		let page = await browser.newPage();
+		
+
         console.log(`Navegando para ${this.url}...`);
         await page.goto(this.url, {timeout: 0});
 			
@@ -39,14 +42,21 @@ const scraperObject = {
 				}
 				catch(err){
 				}
+				try{
+					dataObj['link'] = link;
+				}
+				catch(err){
+				}
 
-				dataObj['farmacia'] = 'DROGA RAIA'
+				dataObj['farmacia'] = 'DROGA RAIA';
+
 				resolve(dataObj);
 				await newPage.close();
 			});
 
 			for(link in urls){
 				let currentPageData = await pagePromise(urls[link]);
+
 				var axios = require('axios');
 
 				var config = {
