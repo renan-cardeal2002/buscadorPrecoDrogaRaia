@@ -1,20 +1,44 @@
 const { Page } = require('puppeteer');
-let contPag = 84
+let contPag;
 
 const scraperObject = {
-	url: 'https://www.drogaraia.com.br/medicamentos.html?page=' + contPag,
+	url: 'https://www.drogaraia.com.br/medicamentos.html?page=',
 	async scraper(browser){
+		var axios = require('axios');
 		let page = await browser.newPage();
-		
 
-        console.log(`Navegando para ${this.url}...`);
-        await page.goto(this.url, {timeout: 0});
-			
-        const allResultsSelector = '.rd-container-fluid .dqiTTm';
-        const resultsSelector = '.products';
+		var config = {
+			method: 'post',
+			url: 'http://192.168.25.60:3333/util/buscarLinkPagina',
+			headers: {
+						"Content-Type": "application/json",
+						"Authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c3VhcmlvIjoiMDIxOTAxOTM5ODIiLCJzZW5oYSI6IlJPTkFMRE8iLCJpYXQiOjE2NzA0OTkxMTMsImV4cCI6MTcwMjAzNTExM30.JqR38Jrk7AQZqIoqk2RLJsmpN7uwe01GQihg5AiB-ws",
+					},
+			data : {
+						farmacia: 'DROGA RAIA'
+					}
+		};
+
+		await axios(config)
+		.then(function (response) {
+			contPag = response.data;
+		})
+		.catch(function (error) {
+			contPag = '';
+		});	
+
+		let urlNav = this.url;
 
 		async function scrapeCurrentPage(){
+			await page.goto(urlNav + contPag, {timeout: 0});
+		
+			console.log(`Navegando para ${urlNav}${contPag}...`);
+				
+			const allResultsSelector = '.rd-container-fluid .dqiTTm';
+			const resultsSelector = '.products';
+	
 			await page.waitForSelector(allResultsSelector);
+
 			let urls = await page.$$eval(resultsSelector, links => {
 				links = links.map(el => el.querySelector('a').href)
 				return links;
@@ -76,21 +100,33 @@ const scraperObject = {
 				});		
 			}
 
-			let nextButtonExist = false;
-			try{
-				const nextButton = await page.$eval('.next-link > a', a => a.textContent);
-				nextButtonExist = true;
-			}
-			catch(err){
-				nextButtonExist = false;
-			}
-			if(nextButtonExist){
-				await page.click('.next-link > a');
-
-				return scrapeCurrentPage();
-			}
-			await page.close();
+			contPag++;
+			
+			var axios = require('axios');
+			var config1 = {
+				method: 'post',
+				url: 'http://192.168.25.60:3333/util/inserirLinksBuscaPreco',
+				headers: {
+					"Content-Type": "application/json",
+					"Authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c3VhcmlvIjoiMDIxOTAxOTM5ODIiLCJzZW5oYSI6IlJPTkFMRE8iLCJpYXQiOjE2NzA0OTkxMTMsImV4cCI6MTcwMjAzNTExM30.JqR38Jrk7AQZqIoqk2RLJsmpN7uwe01GQihg5AiB-ws",
+				},
+				data : {
+					farmacia: 'DROGA RAIA',
+					pagina: contPag
+				}
+			};
+			await axios(config1)
+			.then(function (response) {
+				contPag = response.data;
+			})
+			.catch(function (error) {
+				contPag = '';
+			});	
+			
+			//await page.close();
+			return scrapeCurrentPage();
 		}
+
 		let data = await scrapeCurrentPage();
 		return data;
 	}
